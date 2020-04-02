@@ -159,18 +159,31 @@ void handle_client(int csd) {
     struct ver_msg *msg = (struct ver_msg*)&buf;
 
     /* if protocol is not version 5 close the connection */
+    printf("Version: %d, nmethods: %d\n", msg->ver, msg->nmethods);
+
+    for (int i = 0; i < msg->nmethods; i++) {
+	printf("%d\n", msg->methods[i]); 
+    }
+
+
     if (msg->ver != SOCKS_VERSION || msg->nmethods < 1) {
 	/* wrong protocol */
 	close(csd);
 	return;
     }
 
+    int flag = 0;
     for (int i = 0; i < msg->nmethods; i++) {
-	if (msg->methods[i] != NO_AUTH) {
-	    close(csd);
-	    return;
+	if (msg->methods[i] == NO_AUTH) {
+	    flag = 1;
 	} 
     }
+
+    if (!flag) {
+	close(csd);
+	return;
+    }
+
     
     struct ver_msg_res res_msg = {SOCKS_VERSION, NO_AUTH};
     
@@ -181,7 +194,15 @@ void handle_client(int csd) {
 
     struct req_msg *msg2 = (struct req_msg*)&buf2;
 
-    printf("Version: %d, command: %d, atype: %d\n", msg2->ver, msg2->cmd, msg2->atyp);
+    int sd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sd < 0) {	
+	PRINT_ERROR();
+	close(csd);
+	return;	
+    }
+    
+    /* printf("Version: %d, command: %d, atype: %d\n", msg2->ver, msg2->cmd, msg2->atyp); */
+
     /* for (int i = 0; i < msg->nmethods; i++) { */
 	/* printf("%d\n", msg->methods[i]); */ 
     /* } */
